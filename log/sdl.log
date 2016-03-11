@@ -1,0 +1,10 @@
+2016-03-07 15:18:35,938 INFO  [standard] dao.DataAccessObjectFactory getDaoInstance (DataAccessObjectFactory.java:51) - Instantiating data access object: files\kgadev\Contacts.csv of type: csvWrite
+2016-03-07 15:18:35,939 INFO  [standard] process.ProcessRunner run (ProcessRunner.java:132) - Checking the data access object connection
+2016-03-07 15:18:35,939 INFO  [standard] process.ProcessRunner run (ProcessRunner.java:137) - Setting field types
+2016-03-07 15:18:38,358 INFO  [standard] process.ProcessRunner run (ProcessRunner.java:141) - Setting object reference types
+2016-03-07 15:18:46,730 INFO  [standard] process.ProcessRunner run (ProcessRunner.java:145) - Creating Map
+2016-03-07 15:18:46,732 INFO  [standard] action.OperationInfo instantiateAction (OperationInfo.java:95) - Instantiating action for operation: extract
+2016-03-07 15:18:46,735 INFO  [standard] controller.Controller executeAction (Controller.java:120) - executing operation: extract
+2016-03-07 15:18:46,735 INFO  [standard] action.AbstractAction execute (AbstractAction.java:120) - Loading: extract
+2016-03-07 15:18:49,321 INFO  [standard] progress.NihilistProgressAdapter setSubTask (NihilistProgressAdapter.java:78) - Processed 20 of 20 total records. Rate: 24.000.000 records per hour. Estimated time to complete: 0 minutes and 0 seconds.  There are 20 successes and 0 errors.
+2016-03-07 15:18:49,321 INFO  [standard] progress.NihilistProgressAdapter doneSuccess (NihilistProgressAdapter.java:63) - The operation has fully completed.  There were 20 successful extractions and 0 errors.

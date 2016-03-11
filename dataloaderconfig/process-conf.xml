@@ -1,0 +1,58 @@
+<!DOCTYPE beans PUBLIC "-//SPRING//DTD BEAN//EN" "http://www.springframework.org/dtd/spring-beans.dtd">
+<beans default-lazy-init="false"
+       default-autowire="no"
+       default-dependency-check="none">
+   <bean id="standard"
+         class="com.salesforce.dataloader.process.ProcessRunner"
+         singleton="false"
+         lazy-init="default"
+         autowire="default"
+         dependency-check="default">
+      <description>Created by Dataloader Cliq.</description>
+      <property name="name" value="standard"/>
+      <property name="configOverrideMap">
+         <map>
+            <entry key="dataAccess.readUTF8" value="true"/>
+            <entry key="dataAccess.writeUTF8" value="true"/>
+            <entry key="process.enableExtractStatusOutput" value="true"/>
+            <entry key="process.enableLastRunOutput" value="false"/>
+            <entry key="sfdc.bulkApiCheckStatusInterval" value="5000"/>
+            <entry key="sfdc.bulkApiSerialMode" value="5000"/>
+            <entry key="sfdc.debugMessages" value="false"/>
+            <entry key="sfdc.enableRetries" value="true"/>
+            <entry key="sfdc.extractionRequestSize" value="2000"/>
+            <entry key="sfdc.insertNulls" value="false"/>
+            <entry key="sfdc.maxRetries" value="3"/>
+            <entry key="sfdc.minRetrySleepSecs" value="2"/>
+            <entry key="sfdc.noCompression" value="false"/>
+            <entry key="sfdc.proxyHost" value=""/>
+            <entry key="sfdc.proxyNtlmDomain" value=""/>
+            <entry key="sfdc.proxyPassword" value="f80a8187cf4eec85"/>
+            <entry key="sfdc.proxyPort" value=""/>
+            <entry key="sfdc.proxyUsername" value=""/>
+            <entry key="sfdc.timeoutSecs" value="60"/>
+            <entry key="sfdc.timezone" value="GMT"/>
+            <!-- added values below -->
+            <entry key="sfdc.loadBatchSize" value="10000"/>
+            <entry key="sfdc.useBulkApi" value="true"/>
+            <entry key="dataAccess.name"
+                   value="c:\Dev\orgclone\files\account\account_to_delete.csv"/>
+            <entry key="dataAccess.type" value="csvRead"/>
+            <entry key="sfdc.endpoint"
+                   value="https://test.salesforce.com/services/Soap/u/29.0"/>
+            <entry key="sfdc.entity" value="account"/>
+            <entry key="process.outputError"
+                   value="c:\Dev\orgclone\files\account\export_25-07-2014_0.34.16.59\error.csv"/>
+            <entry key="process.statusOutputDirectory"
+                   value="c:\Dev\orgclone\files\account\export_25-07-2014_0.34.16.59"/>
+            <entry key="process.mappingFile"
+                   value="c:\Dev\orgclone\mappingfiles\delete.sdl"/>
+            <entry key="process.operation" value="delete"/>
+            <entry key="sfdc.password" value="ce9f52eab752286ade885e5c3c4668b8"/>
+            <entry key="process.outputSuccess"
+                   value="c:\Dev\orgclone\files\account\export_25-07-2014_0.34.16.59\success.csv"/>
+            <entry key="sfdc.username" value="kgalant@wellspect.com.fullsb"/>
+         </map>
+      </property>
+   </bean>
+</beans>
