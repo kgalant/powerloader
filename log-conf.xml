@@ -2,7 +2,7 @@
 <!DOCTYPE log4j:configuration SYSTEM "log4j.dtd">
 <log4j:configuration>
 	<appender name="fileAppender" class="org.apache.log4j.RollingFileAppender">
-		<param name="File"   value="c:\\dev\\powerloader\\log\\sdl.log" />
+		<param name="File"   value="log\\sdl.log" />
 		<param name="Append" value="true" />
 		<param name="MaxFileSize" value="100KB" />
 		<param name="MaxBackupIndex" value="1" />
@@ -24,7 +24,7 @@
 		<level value ="warn" />
 	</logger>
 	<root>
-		<priority value ="info" />
+		<priority value ="warn" />
 		<appender-ref ref="fileAppender" />
 		<appender-ref ref="STDOUT" />
 	</root>
