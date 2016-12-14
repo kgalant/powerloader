@@ -212,7 +212,7 @@ for /f %%d in ('dir /a:-d /b %CONFIGSDIR%\%FILEPREFIX%') do (
 	IF !EXP!==1 (
 		@echo Max rowcount for export: !LIMIT!
 		IF !BTSTARTED!==0 (
-			@start c:\tools\baretail.exe %LOGFILE%
+			@start %BARETAIL% %LOGFILE%
 			SET BTSTARTED=1			
 		)
 		
@@ -312,7 +312,7 @@ for /f %%d in ('dir /a:-d /b %CONFIGSDIR%\%FILEPREFIX%') do (
 	
 	IF !IMP!==1 (
 		IF !BTSTARTED!==0 (
-			@start c:\tools\baretail.exe %LOGFILE%
+			@start %BARETAIL% %LOGFILE%
 			SET BTSTARTED=1			
 		)
 		
@@ -334,7 +334,7 @@ for /f %%d in ('dir /a:-d /b %CONFIGSDIR%\%FILEPREFIX%') do (
 	
 	IF !UPS!==1 (
 		IF !BTSTARTED!==0 (
-			@start c:\tools\baretail.exe %LOGFILE%
+			@start %BARETAIL% %LOGFILE%
 			SET BTSTARTED=1			
 		)
 		IF NOT DEFINED WRITEPASSWORD (
@@ -396,7 +396,7 @@ for /f %%d in ('dir /a:-d /b %CONFIGSDIR%\%FILEPREFIX%') do (
 	IF !EXPTARGET!==1 (
 		@echo Max rowcount for export: !LIMIT!
 		IF !BTSTARTED!==0 (
-			@start c:\tools\baretail.exe %LOGFILE%
+			@start %BARETAIL% %LOGFILE%
 			SET BTSTARTED=1			
 		)
 		
@@ -565,7 +565,7 @@ IF NOT EXIST %BASEFILEDIR%%~1 (
 
 SET OPERATION=extract
 
-java -jar %SAXON% -s:!DLDIR!\process-conf-base.xml -xsl:PrepExportConfig.xsl -o:!DLDIR!\process-conf-!OPERATION!-%~1.xml operation=!OPERATION! csv="%~4" dataaccess=csvWrite logdir=%BASEDIR%log entity=%~2 soql="%~3 !LIMIT!" endpoint=%~5 username=%~6 password=%~7 bulkapi=!BULKAPI!  batchsize=!BATCHSIZE! successfile=!LOGSDIR!\success.csv errorfile=!LOGSDIR!\error.csv
+java -jar %SAXON% -s:!DLDIR!\process-conf-base.xml -xsl:!XSLPATH!PrepExportConfig.xsl -o:!DLDIR!\process-conf-!OPERATION!-%~1.xml operation=!OPERATION! csv="%~4" dataaccess=csvWrite logdir=%BASEDIR%log entity=%~2 soql="%~3 !LIMIT!" endpoint=%~5 username=%~6 password=%~7 bulkapi=!BULKAPI!  batchsize=!BATCHSIZE! successfile=!LOGSDIR!\success.csv errorfile=!LOGSDIR!\error.csv
 
 
 type !DLDIR!\doctype.txt !DLDIR!\process-conf-!OPERATION!-%~1.xml > !DLDIR!\process-conf.xml 2>>NUL
@@ -616,7 +616,7 @@ IF NOT EXIST !LOGSDIR! (
 	mkdir !LOGSDIR!
 )
 
-java -jar %SAXON% -s:!DLDIR!\process-conf-base.xml -xsl:PrepExportConfig.xsl -o:!DLDIR!\process-conf-!OPERATION!-%~1.xml operation=!OPERATION! csv=%~4 dataaccess=csvRead logdir=%BASEDIR%log mappingfile=%~3 entity=%~2  endpoint=%~5 username=%~6 password=%~7 bulkapi=!BULKAPI!  batchsize=!BATCHSIZE! successfile=!LOGSDIR!\success.csv errorfile=!LOGSDIR!\error.csv bulkapiserial=!BULKAPISERIAL!  bulkapizipcontent=!BULKAPIZIPCONTENT!
+java -jar %SAXON% -s:!DLDIR!\process-conf-base.xml -xsl:!XSLPATH!PrepExportConfig.xsl -o:!DLDIR!\process-conf-!OPERATION!-%~1.xml operation=!OPERATION! csv=%~4 dataaccess=csvRead logdir=%BASEDIR%log mappingfile=%~3 entity=%~2  endpoint=%~5 username=%~6 password=%~7 bulkapi=!BULKAPI!  batchsize=!BATCHSIZE! successfile=!LOGSDIR!\success.csv errorfile=!LOGSDIR!\error.csv bulkapiserial=!BULKAPISERIAL!  bulkapizipcontent=!BULKAPIZIPCONTENT!
 
 type !DLDIR!\doctype.txt !DLDIR!\process-conf-!OPERATION!-%~1.xml > !DLDIR!\process-conf.xml 2>>NUL
 
@@ -666,7 +666,7 @@ IF NOT EXIST !LOGSDIR! (
 )
 
 
-java -jar %SAXON% -s:!DLDIR!\process-conf-base.xml -xsl:PrepExportConfig.xsl -o:!DLDIR!\process-conf-!OPERATION!-%~1.xml operation=!OPERATION! csv=%~4 dataaccess=csvRead logdir=%BASEDIR%log mappingfile=%~3 entity=%~2 endpoint=%~5 username=%~6 password=%~7 bulkapi=!BULKAPI!  batchsize=!BATCHSIZE! bulkapizipcontent=!BULKAPIZIPCONTENT! externalid=!EXTERNALID! successfile=!LOGSDIR!\success.csv errorfile=!LOGSDIR!\error.csv bulkapiserial=!BULKAPISERIAL! 
+java -jar %SAXON% -s:!DLDIR!\process-conf-base.xml -xsl:!XSLPATH!PrepExportConfig.xsl -o:!DLDIR!\process-conf-!OPERATION!-%~1.xml operation=!OPERATION! csv=%~4 dataaccess=csvRead logdir=%BASEDIR%log mappingfile=%~3 entity=%~2 endpoint=%~5 username=%~6 password=%~7 bulkapi=!BULKAPI!  batchsize=!BATCHSIZE! bulkapizipcontent=!BULKAPIZIPCONTENT! externalid=!EXTERNALID! successfile=!LOGSDIR!\success.csv errorfile=!LOGSDIR!\error.csv bulkapiserial=!BULKAPISERIAL! 
 
 type !DLDIR!\doctype.txt !DLDIR!\process-conf-!OPERATION!-%~1.xml > !DLDIR!\process-conf.xml 2>>NUL
 
@@ -716,7 +716,7 @@ IF NOT EXIST !LOGSDIR! (
 )
 
 
-java -jar %SAXON% -s:!DLDIR!\process-conf-base.xml -xsl:PrepExportConfig.xsl -o:!DLDIR!\process-conf-!OPERATION!-%~1.xml operation=!OPERATION! csv=%~4 dataaccess=csvRead logdir=%BASEDIR%log mappingfile=%~3 entity=%~2 endpoint=%~5 username=%~6 password=%~7 bulkapi=!BULKAPI!  batchsize=!BATCHSIZE! bulkapizipcontent=!BULKAPIZIPCONTENT! externalid=!EXTERNALID! successfile=!LOGSDIR!\success.csv errorfile=!LOGSDIR!\error.csv bulkapiserial=!BULKAPISERIAL!
+java -jar %SAXON% -s:!DLDIR!\process-conf-base.xml -xsl:!XSLPATH!PrepExportConfig.xsl -o:!DLDIR!\process-conf-!OPERATION!-%~1.xml operation=!OPERATION! csv=%~4 dataaccess=csvRead logdir=%BASEDIR%log mappingfile=%~3 entity=%~2 endpoint=%~5 username=%~6 password=%~7 bulkapi=!BULKAPI!  batchsize=!BATCHSIZE! bulkapizipcontent=!BULKAPIZIPCONTENT! externalid=!EXTERNALID! successfile=!LOGSDIR!\success.csv errorfile=!LOGSDIR!\error.csv bulkapiserial=!BULKAPISERIAL!
 
 type !DLDIR!\doctype.txt !DLDIR!\process-conf-!OPERATION!-%~1.xml > !DLDIR!\process-conf.xml 2>>NUL
 
@@ -916,7 +916,7 @@ SET OPERATION=delete
 
 @echo %time%: Making Apex DataLoader config file (process-conf.xml)
 
-java -jar %SAXON% -s:!DLDIR!\process-conf-base.xml -xsl:PrepExportConfig.xsl -o:!DLDIR!\process-conf-!OPERATION!-%~1.xml operation=!OPERATION! csv=%~4 dataaccess=csvRead logdir=!LOGSDIR! mappingfile=%~3 entity=%~2 endpoint=%~5 username=%~6 password=%~7 bulkapi=!BULKAPI! batchsize=!BATCHSIZE! successfile=!LOGSDIR!\success.csv errorfile=!LOGSDIR!\error.csv
+java -jar %SAXON% -s:!DLDIR!\process-conf-base.xml -xsl:!XSLPATH!PrepExportConfig.xsl -o:!DLDIR!\process-conf-!OPERATION!-%~1.xml operation=!OPERATION! csv=%~4 dataaccess=csvRead logdir=!LOGSDIR! mappingfile=%~3 entity=%~2 endpoint=%~5 username=%~6 password=%~7 bulkapi=!BULKAPI! batchsize=!BATCHSIZE! successfile=!LOGSDIR!\success.csv errorfile=!LOGSDIR!\error.csv
 
 type !DLDIR!\doctype.txt !DLDIR!\process-conf-!OPERATION!-%~1.xml > !DLDIR!\process-conf.xml 2>>NUL
 
