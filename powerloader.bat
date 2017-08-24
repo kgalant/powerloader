@@ -167,6 +167,9 @@ for /f %%d in ('dir /a:-d /b %CONFIGSDIR%\%FILEPREFIX%') do (
 	SET DOFIRSTSQL=0
 	SET FARTMAPAFTER=0
 	SET FARTMAPREMOVE=0
+	SET CMDBEFORE=0
+	SET CMDAFTER=0
+	SET ABORTONERROR=0
 	SET FARTMAPPINGAFTER=
 	SET UNLOADWHERE=
 	SET FIELDSTRING=
@@ -175,6 +178,8 @@ for /f %%d in ('dir /a:-d /b %CONFIGSDIR%\%FILEPREFIX%') do (
 	SET EXTERNALID=
 	SET SFMAPPINGFILE=
 	SET GENERATEMAPPINGFILE=
+	SET BEFCMD=
+	SET AFTCMD=
    
    		Setlocal DisableDelayedExpansion
 		for /f "eol=# tokens=1,2 delims=:" %%a in (%BASEDIR%configs\%%d) do (
@@ -207,7 +212,19 @@ for /f %%d in ('dir /a:-d /b %CONFIGSDIR%\%FILEPREFIX%') do (
 	SET STARTTIME=!time!
 	@echo !STARTTIME!: Starting processing file %%d
 	
-	
+	IF !CMDBEFORE!==1 (
+		IF !BTSTARTED!==0 (
+			@start c:\tools\baretail.exe %LOGFILE%
+			SET BTSTARTED=1			
+		)
+		
+		call !BEFCMD!
+	) ELSE (
+		IF %SHOWSKIPS%==1 (
+			@echo Skipping: Command before run for !JOBDESC!
+		)
+	)
+
 	
 	IF !EXP!==1 (
 		@echo Max rowcount for export: !LIMIT!
@@ -326,6 +343,7 @@ for /f %%d in ('dir /a:-d /b %CONFIGSDIR%\%FILEPREFIX%') do (
 		)
 		
 		call :StandardImport !OBJECT! !ENTITY! %MAPPINGDIR%\!SFMAPPINGFILE! !MAPPEDFILENAME! !WRITEENDPOINT! !WRITEUSERNAME! !WRITEPASSWORD!
+		if !ISERROR!==1 (exit /b)
 	) ELSE (
 		IF %SHOWSKIPS%==1 (
 			@echo Skipping: Import for !JOBDESC!
@@ -347,6 +365,7 @@ for /f %%d in ('dir /a:-d /b %CONFIGSDIR%\%FILEPREFIX%') do (
 		)
 
 		call :StandardUpsert !OBJECT! !ENTITY! %MAPPINGDIR%\!SFMAPPINGFILE! !FILENAME! !WRITEENDPOINT! !WRITEUSERNAME! !WRITEPASSWORD!
+		if !ISERROR!==1 (exit /b)
 	) ELSE (
 		IF %SHOWSKIPS%==1 (
 			@echo Skipping: Upsert for !JOBDESC!
@@ -369,6 +388,7 @@ for /f %%d in ('dir /a:-d /b %CONFIGSDIR%\%FILEPREFIX%') do (
 		)
 
 		call :StandardUpdate !OBJECT! !ENTITY! %MAPPINGDIR%\!SFMAPPINGFILE! !MAPPEDFILENAME! !WRITEENDPOINT! !WRITEUSERNAME! !WRITEPASSWORD!
+		if !ISERROR!==1 (exit /b)
 	) ELSE (
 		IF %SHOWSKIPS%==1 (
 			@echo Skipping: Update for !JOBDESC!
@@ -408,6 +428,20 @@ for /f %%d in ('dir /a:-d /b %CONFIGSDIR%\%FILEPREFIX%') do (
 	) ELSE (
 		IF %SHOWSKIPS%==1 (
 			@echo Skipping: Export for !JOBDESC!
+		)
+	)
+
+	IF !CMDAFTER!==1 (
+		IF !BTSTARTED!==0 (
+			@start c:\tools\baretail.exe %LOGFILE%
+			SET BTSTARTED=1			
+		)
+		
+		call !AFTCMD!
+
+	) ELSE (
+		IF %SHOWSKIPS%==1 (
+			@echo Skipping: Command after run for !JOBDESC!
 		)
 	)
 	
@@ -598,7 +632,7 @@ rem *****************************************************
 @echo off
 @echo !JOBDESC! - StandardImport
 @echo %time%: Making Apex DataLoader config file (process-conf.xml)
-
+set ISERROR=0
 rem make temp dir for the error & success files
 
 rem make temp dir for the error & success files
@@ -623,7 +657,7 @@ type !DLDIR!\doctype.txt !DLDIR!\process-conf-!OPERATION!-%~1.xml > !DLDIR!\proc
 @echo %time%: Calling import using %WRITEUSERNAME%
 java -cp %DLJAR% %JAVAMEM% -Dsalesforce.config.dir=!DLDIR!\ com.salesforce.dataloader.process.ProcessRunner process.name=standard >> %LOGFILE% 2>&1
 @echo %time%: Import complete
-
+call :AbortOnError errorfile=!LOGSDIR!\error.csv
 call :GetLastLineOfLog %MAINLOGDIR%\sdl.log
 
 call :ZipResult "%BASEFILEDIR%%~1\result_!JOBDESC!-!OPERATION!_!FILETS!.zip" !LOGSDIR!
@@ -649,7 +683,7 @@ rem *****************************************************
 @echo off
 @echo !JOBDESC! - StandardUpsert
 @echo %time%: Making Apex DataLoader config file (process-conf.xml)
-
+set ISERROR=0
 rem make temp dir for the error & success files
 
 SET FILETS=%DATE:/=-%_%TIME::=.%
@@ -673,7 +707,7 @@ type !DLDIR!\doctype.txt !DLDIR!\process-conf-!OPERATION!-%~1.xml > !DLDIR!\proc
 @echo %time%: Calling upsert using %WRITEUSERNAME%
 java -cp %DLJAR% %JAVAMEM% -Dsalesforce.config.dir=!DLDIR!\ com.salesforce.dataloader.process.ProcessRunner process.name=standard >> %LOGFILE% 2>&1
 @echo %time%: Upsert complete
-
+call :AbortOnError errorfile=!LOGSDIR!\error.csv
 call :GetLastLineOfLog %MAINLOGDIR%\sdl.log
 
 call :ZipResult "%BASEFILEDIR%%~1\result_!JOBDESC!-!OPERATION!_!FILETS!.zip" !LOGSDIR!
@@ -699,7 +733,7 @@ rem *****************************************************
 @echo off
 @echo !JOBDESC! - StandardUpdate
 @echo %time%: Making Apex DataLoader config file (process-conf.xml)
-
+set ISERROR=0
 rem make temp dir for the error & success files
 
 SET FILETS=%DATE:/=-%_%TIME::=.%
@@ -723,7 +757,7 @@ type !DLDIR!\doctype.txt !DLDIR!\process-conf-!OPERATION!-%~1.xml > !DLDIR!\proc
 @echo %time%: Calling update using %WRITEUSERNAME% - file %~4
 java -cp %DLJAR% %JAVAMEM% -Dsalesforce.config.dir=!DLDIR!\ com.salesforce.dataloader.process.ProcessRunner process.name=standard >> %LOGFILE% 2>&1
 @echo %time%: Update complete
-
+call :AbortOnError errorfile=!LOGSDIR!\error.csv
 call :GetLastLineOfLog %MAINLOGDIR%\sdl.log
 
 call :ZipResult "%BASEFILEDIR%%~1\result_!JOBDESC!-!OPERATION!_!FILETS!.zip" !LOGSDIR!
@@ -1079,6 +1113,20 @@ for %%f in (%4) do (
 	
 )
 
+exit /b
+
+:AbortOnError		
+	IF !ABORTONERROR!==1 (		
+		rem * figure out how many lines in error.csv		
+		echo 1:%1 2:%2		
+ 		for /f %%C in ('Find /V /C "" ^<  %2') do set lineCount=%%C		
+		echo Lines: !lineCount!			
+		if !lineCount! gtr 1 (		
+			echo Errors found in this job: error file has !lineCount! lines. Aborting execution		
+			SET ISERROR=1		
+			exit /b 		
+			)		
+	)		
 exit /b
 
 :GenerateSDLFile
