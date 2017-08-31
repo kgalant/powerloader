@@ -170,6 +170,7 @@ for /f %%d in ('dir /a:-d /b %CONFIGSDIR%\%FILEPREFIX%') do (
 	SET CMDBEFORE=0
 	SET CMDAFTER=0
 	SET ABORTONERROR=0
+	SET ZIPRESULTS=1
 	SET FARTMAPPINGAFTER=
 	SET UNLOADWHERE=
 	SET FIELDSTRING=
@@ -180,6 +181,7 @@ for /f %%d in ('dir /a:-d /b %CONFIGSDIR%\%FILEPREFIX%') do (
 	SET GENERATEMAPPINGFILE=
 	SET BEFCMD=
 	SET AFTCMD=
+	SET JOBRESULTS=
    
    		Setlocal DisableDelayedExpansion
 		for /f "eol=# tokens=1,2 delims=:" %%a in (%BASEDIR%configs\%%d) do (
@@ -211,6 +213,7 @@ for /f %%d in ('dir /a:-d /b %CONFIGSDIR%\%FILEPREFIX%') do (
 	@echo ******************************
 	SET STARTTIME=!time!
 	@echo !STARTTIME!: Starting processing file %%d
+	SET CURRENTFILE=%%d
 	
 	IF !CMDBEFORE!==1 (
 		IF !BTSTARTED!==0 (
@@ -970,14 +973,42 @@ exit /b
 
 :ZipResult
 
-@echo %time%: starting results zip to %~1
-rem now zip up the content of the logsdir
-!ZIP! a "%~1" %~2\*.* >NUL 2>&1
+rem %1 name of output Zipfile
+rem %2 name of log directory which is to be zipped
+
+rem echo ZIPRESULTS: !ZIPRESULTS!
+rem echo JOBRESULTS: !JOBRESULTS!
+
+IF !ZIPRESULTS!==1 (
+	@echo %time%: starting results zip to %~1
+	rem now zip up the content of the logsdir
+	!ZIP! a "%~1" %~2\*.* >NUL 2>&1
+	
+	
+) else (
+	IF [!JOBRESULTS!] == [] (
+		@echo %time%: asked to not zip job results, but no JORRESULTS parameter found in config file, will zip anyway to %~1
+		rem now zip up the content of the logsdir
+		!ZIP! a "%~1" %~2\*.* >NUL 2>&1
+	)
+)
+
+IF !ZIPRESULTS!==0 IF NOT [!JOBRESULTS!] == [] (
+	@echo %time%: asked to not zip job results, moving to !JOBRESULTS!
+	@echo %time%: moving %~2\success.csv to !JOBRESULTS!\success_!CURRENTFILE!.csv
+	Move %~2\success.csv !JOBRESULTS!\success_!CURRENTFILE!.csv
+	@echo %time%: moving %~2\error.csv to !JOBRESULTS!\error_!CURRENTFILE!.csv
+	move %~2\error.csv !JOBRESULTS!\error_!CURRENTFILE!.csv
+)
+
 rem remove logsdir
 rmdir /s /q %~2
-@echo %time%: finished results zip
+@echo %time%: finished results zip/move
+
 rem this is CALLed, so we need to Exit /b instead of the GOTO
 exit /b
+
+
 
 :ZipConfFiles
 
