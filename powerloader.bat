@@ -1009,7 +1009,6 @@ rem this is CALLed, so we need to Exit /b instead of the GOTO
 exit /b
 
 
-
 :ZipConfFiles
 
 @echo %time%: starting conf zip to %~1
@@ -1149,14 +1148,15 @@ exit /b
 :AbortOnError		
 	IF !ABORTONERROR!==1 (		
 		rem * figure out how many lines in error.csv		
-		echo 1:%1 2:%2		
- 		for /f %%C in ('Find /V /C "" ^<  %2') do set lineCount=%%C		
-		echo Lines: !lineCount!			
+		rem echo 1:%1 2:%2		
+ 		for /f %%C in ('Find /V /C "" ^<  %2') do set lineCount=%%C
+ 		for /l %%a in (1,1,100) do if "!lineCount:~-1!"==" " set lineCount=!lineCount:~0,-1! 
+		echo Lines: !lineCount!.
 		if !lineCount! gtr 1 (		
 			echo Errors found in this job: error file has !lineCount! lines. Aborting execution		
-			SET ISERROR=1		
+			SET ISERROR=1
 			exit /b 		
-			)		
+		)		
 	)		
 exit /b
 

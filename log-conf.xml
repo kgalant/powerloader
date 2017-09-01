@@ -24,7 +24,7 @@
 		<level value ="warn" />
 	</logger>
 	<root>
-		<priority value ="warn" />
+		<priority value ="info" />
 		<appender-ref ref="fileAppender" />
 		<appender-ref ref="STDOUT" />
 	</root>
