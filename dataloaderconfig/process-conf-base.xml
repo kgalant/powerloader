@@ -16,7 +16,7 @@
             <entry key="process.enableExtractStatusOutput" value="true"/>
             <entry key="process.enableLastRunOutput" value="false"/>
             <entry key="sfdc.bulkApiCheckStatusInterval" value="5000"/>
-            <entry key="sfdc.bulkApiSerialMode" value="true"/>
+            <entry key="sfdc.bulkApiSerialMode" value="false"/>
             <entry key="sfdc.debugMessages" value="false"/>
             <entry key="sfdc.enableRetries" value="true"/>
             <entry key="sfdc.extractionRequestSize" value="2000"/>
