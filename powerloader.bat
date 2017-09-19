@@ -949,7 +949,7 @@ IF NOT EXIST %BASEFILEDIR%%~1 (
 	@mkdir %BASEFILEDIR%%~1
 )
 
-SET OPERATION=delete
+SET OPERATION=hard_delete
 
 @echo %time%: Making Apex DataLoader config file (process-conf.xml)
 
