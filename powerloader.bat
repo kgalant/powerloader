@@ -41,8 +41,19 @@ rem  	echo:
 rem  	echo  -----------------------------------------------------------------------------------
 rem   	echo "usage: powerloader soqldelete org_to_delete_from (true|false) objecttodelete "soql""
 rem   	echo  -----------------------------------------------------------------------------------
-rem  	echo powerloader delete source false MyCustomObject__c "select ID from MyCustomObject__c WHERE NAME LIKE 'Foo%%'" will delete the 
+rem  	echo powerloader soqldelete source false MyCustomObject__c "select ID from MyCustomObject__c WHERE NAME LIKE 'Foo%%'" will delete the 
 rem  	echo MyCustomObject__c items returned by the SOQL from the source org using SOAP API - use true in third parameter to use Bulk API.
+rem  	echo SOQL must be enclosed in double quotes, any percentage signs doubled
+rem  	echo using properties/source.properties as credentials for the source org and properties/target.properties as the same for the target org
+rem  	echo:
+rem  	echo or
+rem  	echo:
+rem  	echo  -------------------------------------------------------------------------------------------------
+rem   	echo "usage: powerloader soqlexport org_to_export_from (true|false) objecttoexport "soql"" filename.csv
+rem   	echo  -------------------------------------------------------------------------------------------------
+rem  	echo powerloader soqlexport source false MyCustomObject__c "select ID from MyCustomObject__c WHERE NAME LIKE 'Foo%%'" will export the 
+rem  	echo MyCustomObject__c items returned by the SOQL from the source org and put them in fielname.csv using SOAP API - use true in third 
+rem  	echo parameter to use Bulk API.
 rem  	echo SOQL must be enclosed in double quotes, any percentage signs doubled
 rem  	echo using properties/source.properties as credentials for the source org and properties/target.properties as the same for the target org
 rem  	exit /b
@@ -87,6 +98,7 @@ rem if we're doing a delete, then go there directly
 
 if %1==delete goto :DoDelete
 if %1==soqldelete goto :DoDelete
+if %1==soqlexport goto :DoQuickExport
 
 rem database config
 
@@ -167,6 +179,10 @@ for /f %%d in ('dir /a:-d /b %CONFIGSDIR%\%FILEPREFIX%') do (
 	SET DOFIRSTSQL=0
 	SET FARTMAPAFTER=0
 	SET FARTMAPREMOVE=0
+	SET CMDBEFORE=0
+	SET CMDAFTER=0
+	SET ABORTONERROR=0
+	SET ZIPRESULTS=1
 	SET FARTMAPPINGAFTER=
 	SET UNLOADWHERE=
 	SET FIELDSTRING=
@@ -175,6 +191,9 @@ for /f %%d in ('dir /a:-d /b %CONFIGSDIR%\%FILEPREFIX%') do (
 	SET EXTERNALID=
 	SET SFMAPPINGFILE=
 	SET GENERATEMAPPINGFILE=
+	SET BEFCMD=
+	SET AFTCMD=
+	SET JOBRESULTS=
    
    		Setlocal DisableDelayedExpansion
 		for /f "eol=# tokens=1,2 delims=:" %%a in (%BASEDIR%configs\%%d) do (
@@ -206,8 +225,21 @@ for /f %%d in ('dir /a:-d /b %CONFIGSDIR%\%FILEPREFIX%') do (
 	@echo ******************************
 	SET STARTTIME=!time!
 	@echo !STARTTIME!: Starting processing file %%d
+	SET CURRENTFILE=%%d
 	
-	
+	IF !CMDBEFORE!==1 (
+		IF !BTSTARTED!==0 (
+			@start c:\tools\baretail.exe %LOGFILE%
+			SET BTSTARTED=1			
+		)
+		
+		call !BEFCMD!
+	) ELSE (
+		IF %SHOWSKIPS%==1 (
+			@echo Skipping: Command before run for !JOBDESC!
+		)
+	)
+
 	
 	IF !EXP!==1 (
 		@echo Max rowcount for export: !LIMIT!
@@ -326,6 +358,7 @@ for /f %%d in ('dir /a:-d /b %CONFIGSDIR%\%FILEPREFIX%') do (
 		)
 		
 		call :StandardImport !OBJECT! !ENTITY! %MAPPINGDIR%\!SFMAPPINGFILE! !MAPPEDFILENAME! !WRITEENDPOINT! !WRITEUSERNAME! !WRITEPASSWORD!
+		if !ISERROR!==1 (exit /b)
 	) ELSE (
 		IF %SHOWSKIPS%==1 (
 			@echo Skipping: Import for !JOBDESC!
@@ -347,6 +380,7 @@ for /f %%d in ('dir /a:-d /b %CONFIGSDIR%\%FILEPREFIX%') do (
 		)
 
 		call :StandardUpsert !OBJECT! !ENTITY! %MAPPINGDIR%\!SFMAPPINGFILE! !FILENAME! !WRITEENDPOINT! !WRITEUSERNAME! !WRITEPASSWORD!
+		if !ISERROR!==1 (exit /b)
 	) ELSE (
 		IF %SHOWSKIPS%==1 (
 			@echo Skipping: Upsert for !JOBDESC!
@@ -369,6 +403,7 @@ for /f %%d in ('dir /a:-d /b %CONFIGSDIR%\%FILEPREFIX%') do (
 		)
 
 		call :StandardUpdate !OBJECT! !ENTITY! %MAPPINGDIR%\!SFMAPPINGFILE! !MAPPEDFILENAME! !WRITEENDPOINT! !WRITEUSERNAME! !WRITEPASSWORD!
+		if !ISERROR!==1 (exit /b)
 	) ELSE (
 		IF %SHOWSKIPS%==1 (
 			@echo Skipping: Update for !JOBDESC!
@@ -408,6 +443,20 @@ for /f %%d in ('dir /a:-d /b %CONFIGSDIR%\%FILEPREFIX%') do (
 	) ELSE (
 		IF %SHOWSKIPS%==1 (
 			@echo Skipping: Export for !JOBDESC!
+		)
+	)
+
+	IF !CMDAFTER!==1 (
+		IF !BTSTARTED!==0 (
+			@start c:\tools\baretail.exe %LOGFILE%
+			SET BTSTARTED=1			
+		)
+		
+		call !AFTCMD!
+
+	) ELSE (
+		IF %SHOWSKIPS%==1 (
+			@echo Skipping: Command after run for !JOBDESC!
 		)
 	)
 	
@@ -598,7 +647,7 @@ rem *****************************************************
 @echo off
 @echo !JOBDESC! - StandardImport
 @echo %time%: Making Apex DataLoader config file (process-conf.xml)
-
+set ISERROR=0
 rem make temp dir for the error & success files
 
 rem make temp dir for the error & success files
@@ -623,7 +672,7 @@ type !DLDIR!\doctype.txt !DLDIR!\process-conf-!OPERATION!-%~1.xml > !DLDIR!\proc
 @echo %time%: Calling import using %WRITEUSERNAME%
 java -cp %DLJAR% %JAVAMEM% -Dsalesforce.config.dir=!DLDIR!\ com.salesforce.dataloader.process.ProcessRunner process.name=standard >> %LOGFILE% 2>&1
 @echo %time%: Import complete
-
+call :AbortOnError errorfile=!LOGSDIR!\error.csv
 call :GetLastLineOfLog %MAINLOGDIR%\sdl.log
 
 call :ZipResult "%BASEFILEDIR%%~1\result_!JOBDESC!-!OPERATION!_!FILETS!.zip" !LOGSDIR!
@@ -649,7 +698,7 @@ rem *****************************************************
 @echo off
 @echo !JOBDESC! - StandardUpsert
 @echo %time%: Making Apex DataLoader config file (process-conf.xml)
-
+set ISERROR=0
 rem make temp dir for the error & success files
 
 SET FILETS=%DATE:/=-%_%TIME::=.%
@@ -673,7 +722,7 @@ type !DLDIR!\doctype.txt !DLDIR!\process-conf-!OPERATION!-%~1.xml > !DLDIR!\proc
 @echo %time%: Calling upsert using %WRITEUSERNAME%
 java -cp %DLJAR% %JAVAMEM% -Dsalesforce.config.dir=!DLDIR!\ com.salesforce.dataloader.process.ProcessRunner process.name=standard >> %LOGFILE% 2>&1
 @echo %time%: Upsert complete
-
+call :AbortOnError errorfile=!LOGSDIR!\error.csv
 call :GetLastLineOfLog %MAINLOGDIR%\sdl.log
 
 call :ZipResult "%BASEFILEDIR%%~1\result_!JOBDESC!-!OPERATION!_!FILETS!.zip" !LOGSDIR!
@@ -699,7 +748,7 @@ rem *****************************************************
 @echo off
 @echo !JOBDESC! - StandardUpdate
 @echo %time%: Making Apex DataLoader config file (process-conf.xml)
-
+set ISERROR=0
 rem make temp dir for the error & success files
 
 SET FILETS=%DATE:/=-%_%TIME::=.%
@@ -723,7 +772,7 @@ type !DLDIR!\doctype.txt !DLDIR!\process-conf-!OPERATION!-%~1.xml > !DLDIR!\proc
 @echo %time%: Calling update using %WRITEUSERNAME% - file %~4
 java -cp %DLJAR% %JAVAMEM% -Dsalesforce.config.dir=!DLDIR!\ com.salesforce.dataloader.process.ProcessRunner process.name=standard >> %LOGFILE% 2>&1
 @echo %time%: Update complete
-
+call :AbortOnError errorfile=!LOGSDIR!\error.csv
 call :GetLastLineOfLog %MAINLOGDIR%\sdl.log
 
 call :ZipResult "%BASEFILEDIR%%~1\result_!JOBDESC!-!OPERATION!_!FILETS!.zip" !LOGSDIR!
@@ -912,7 +961,7 @@ IF NOT EXIST %BASEFILEDIR%%~1 (
 	@mkdir %BASEFILEDIR%%~1
 )
 
-SET OPERATION=delete
+SET OPERATION=hard_delete
 
 @echo %time%: Making Apex DataLoader config file (process-conf.xml)
 
@@ -936,14 +985,41 @@ exit /b
 
 :ZipResult
 
-@echo %time%: starting results zip to %~1
-rem now zip up the content of the logsdir
-!ZIP! a "%~1" %~2\*.* >NUL 2>&1
+rem %1 name of output Zipfile
+rem %2 name of log directory which is to be zipped
+
+rem echo ZIPRESULTS: !ZIPRESULTS!
+rem echo JOBRESULTS: !JOBRESULTS!
+
+IF !ZIPRESULTS!==1 (
+	@echo %time%: starting results zip to %~1
+	rem now zip up the content of the logsdir
+	!ZIP! a "%~1" %~2\*.* >NUL 2>&1
+	
+	
+) else (
+	IF [!JOBRESULTS!] == [] (
+		@echo %time%: asked to not zip job results, but no JORRESULTS parameter found in config file, will zip anyway to %~1
+		rem now zip up the content of the logsdir
+		!ZIP! a "%~1" %~2\*.* >NUL 2>&1
+	)
+)
+
+IF !ZIPRESULTS!==0 IF NOT [!JOBRESULTS!] == [] (
+	@echo %time%: asked to not zip job results, moving to !JOBRESULTS!
+	@echo %time%: moving %~2\success.csv to !JOBRESULTS!\success_!CURRENTFILE!.csv
+	Move %~2\success.csv !JOBRESULTS!\success_!CURRENTFILE!.csv
+	@echo %time%: moving %~2\error.csv to !JOBRESULTS!\error_!CURRENTFILE!.csv
+	move %~2\error.csv !JOBRESULTS!\error_!CURRENTFILE!.csv
+)
+
 rem remove logsdir
 rmdir /s /q %~2
-@echo %time%: finished results zip
+@echo %time%: finished results zip/move
+
 rem this is CALLed, so we need to Exit /b instead of the GOTO
 exit /b
+
 
 :ZipConfFiles
 
@@ -1079,6 +1155,77 @@ for %%f in (%4) do (
 	
 )
 
+exit /b
+
+:DoQuickExport
+
+rem powerloader soqlexport org_to_export_from (true|false) objecttoexport "soql"" filename.csv
+rem %1 - command
+rem %2 - propertyfile
+rem %3 - use Bulk API (true|false)
+rem %4 - objecttoexport
+rem %5 - SOQL to export by
+rem %6 - output filename
+
+call :LoadPropFile %PROPDIR%%2.properties
+
+SET WRITEENDPOINT=!SERVERURL!%URLSUFFIX%!apiversion!
+SET WRITEUSERNAME=!USERNAME!
+SET WRITEUNENCPASSWORD=!PASSWORD!
+
+call :GetEncryptedPassword !WRITEUNENCPASSWORD! WRITEPASSWORD
+
+@start %BARETAIL% -ws 1 -tc 4 -ti 3 %LOGFILE%
+SET BULKAPI=%3
+
+for %%f in (%4) do (
+
+	if [%%f] neq [] (
+		rem generate DLDIR for this run
+		
+		call :GetTimestamp
+		SET DIRTS=!DATE.YEAR!!DATE.MONTH!!DATE.DAY!_!DATE.HOUR!.!DATE.MINUTE!.!DATE.SECOND!.!DATE.FRACTIONS!
+		
+		SET DLDIR=%BASEDLDIR%\dlconfig-delete-!DIRTS!
+		mkdir !DLDIR!
+		@xcopy /q %BASEDLDIR%\*.* !DLDIR! >> NUL 2>&1
+
+		@echo Processing object %%f
+
+		SET ITEMTOEXPORT=%%f
+		echo ********************************************
+		echo * Exporting from %%f
+		echo ********************************************
+		SET EXPORTFILENAME=%BASEFILEDIR%%%f\%6
+		SET OBJECT=%%f 
+		SET JOBDESC=QuickExport %%f
+		SET SOQL=%5
+		SET SOQL=!SOQL:"=!
+		@rem "
+		SET BATCHSIZE=10000
+		SET ENTITY=%%f
+		SET SFMAPPINGFILE=delete.sdl
+	   
+		call :StandardExport !OBJECT! !ENTITY! "!SOQL!" !EXPORTFILENAME! !WRITEENDPOINT! !WRITEUSERNAME! !WRITEPASSWORD!
+	)
+	
+)
+
+exit /b
+
+:AbortOnError		
+	IF !ABORTONERROR!==1 (		
+		rem * figure out how many lines in error.csv		
+		rem echo 1:%1 2:%2		
+ 		for /f %%C in ('Find /V /C "" ^<  %2') do set lineCount=%%C
+ 		for /l %%a in (1,1,100) do if "!lineCount:~-1!"==" " set lineCount=!lineCount:~0,-1! 
+		echo Lines: !lineCount!.
+		if !lineCount! gtr 1 (		
+			echo Errors found in this job: error file has !lineCount! lines. Aborting execution		
+			SET ISERROR=1
+			exit /b 		
+		)		
+	)		
 exit /b
 
 :GenerateSDLFile
