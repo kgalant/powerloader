@@ -1211,7 +1211,8 @@ for %%f in (%4) do (
 	
 )
 
-exit /b
+@rem special exit 
+exit
 
 :AbortOnError		
 	IF !ABORTONERROR!==1 (		
