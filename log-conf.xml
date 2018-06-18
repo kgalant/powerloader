@@ -23,8 +23,18 @@
 	<logger name="org.apache" >
 		<level value ="warn" />
 	</logger>
+	<logger name="org.apache" >
+		<level value ="warn" />
+	</logger>
+	<logger name="com.salesforce.dataloader.action.visitor.BulkApiVisitorUtil" >
+		<level value ="info" />
+	</logger>
+	<logger name="com.salesforce.dataloader.action.progress.NihilistProgressAdapter">
+		<level value ="info" />
+	</logger>
 	<root>
-		<priority value ="warn" />
+		<!-- <priority value ="info" /> -->
+		<priority value ="error" />
 		<appender-ref ref="fileAppender" />
 		<appender-ref ref="STDOUT" />
 	</root>
