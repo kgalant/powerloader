@@ -20,6 +20,7 @@
 	<xsl:param name="soql"/> <!-- <entry key="sfdc.extractionSOQL" value="SOQL"/>  SELECT Id, name FROM Account -->
 	<xsl:param name="successfile"/><!-- <entry key="process.outputSuccess" value="LOGDIR"/> -->
 	<xsl:param name="username"/>  <!-- <entry key="sfdc.username" value="USERNAME"/> -->
+	<xsl:param name="keyfile"/>  <!-- <entry key=process.encryptionKeyFile" value="c:\Users\{user}\.dataloader\dataLoader.key"/> -->
 
 
 	<!-- <entry key="process.statusOutputDirectory" value="LOGDIR"/> -->
@@ -183,6 +184,15 @@
 					<entry>
 						<xsl:attribute name='key'>sfdc.username</xsl:attribute>
 						<xsl:attribute name='value'><xsl:value-of select="$username"/></xsl:attribute>
+					</entry>
+				</xsl:when>
+			</xsl:choose>
+
+			<xsl:choose>
+				<xsl:when test="$keyfile">
+					<entry>
+						<xsl:attribute name='key'>process.encryptionKeyFile</xsl:attribute>
+						<xsl:attribute name='value'><xsl:value-of select="$keyfile"/></xsl:attribute>
 					</entry>
 				</xsl:when>
 			</xsl:choose>

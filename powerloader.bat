@@ -4,14 +4,14 @@
  
 @cls
 
-@echo off
-
 Setlocal EnableDelayedExpansion
+
+@SET ECHOVALUE=off
 
 rem database params
 
 
-
+@echo off
 rem rem echo off
 rem set argC=0 
 rem for %%x in (%*) do (
@@ -63,6 +63,8 @@ rem  )
 
 rem assuming directory structure going out from the place where this batch file resides
 
+@echo !ECHOVALUE!
+
 SET BASEDIR=%~dp0
 SET BASEFILEDIR=%BASEDIR%files\
 SET MAPPINGDIR=%BASEDIR%mappingfiles
@@ -108,17 +110,17 @@ rem salesforce params - source
 
 call :LoadPropFile %PROPDIR%%2.properties
 
-SET READENDPOINT=!SERVERURL!%URLSUFFIX%!apiversion!
-SET READUSERNAME=!USERNAME!
-SET READUNENCPASSWORD=!PASSWORD!
+SET READENDPOINT=!SF.SERVERURL!%URLSUFFIX%!sf.apiversion!
+SET READUSERNAME=!SF.USERNAME!
+SET READUNENCPASSWORD=!SF.PASSWORD!
 
 rem salesforce params - target
 
 call :LoadPropFile %PROPDIR%%3.properties
 
-SET WRITEENDPOINT=!SERVERURL!%URLSUFFIX%!apiversion!
-SET WRITEUSERNAME=!USERNAME!
-SET WRITEUNENCPASSWORD=!PASSWORD!
+SET WRITEENDPOINT=!SF.SERVERURL!%URLSUFFIX%!sf.apiversion!
+SET WRITEUSERNAME=!SF.USERNAME!
+SET WRITEUNENCPASSWORD=!SF.PASSWORD!
 
  
 echo *********************************************************
@@ -215,6 +217,9 @@ for /f %%d in ('dir /a:-d /b %CONFIGSDIR%\%FILEPREFIX%') do (
 	SET DIRTS=!DATE.YEAR!!DATE.MONTH!!DATE.DAY!_!DATE.HOUR!.!DATE.MINUTE!.!DATE.SECOND!.!DATE.FRACTIONS!
 	
 	SET DLDIR=%BASEDLDIR%\dlconfig-%%d-!DIRTS!
+
+	echo Dataload directory: !DLDIR!
+	pause
 	mkdir !DLDIR!
 	@copy %BASEDLDIR%\*.* !DLDIR! > NUL
 	
@@ -474,7 +479,7 @@ exit /b
 
 
 
-@echo off
+@echo !ECHOVALUE!
 rem *****************************************************
 rem *				DynamicQuery				*
 rem *													*
@@ -482,7 +487,7 @@ rem *****************************************************
 
 :DynamicQuery
 
-@echo off
+@echo !ECHOVALUE!
 @echo !JOBDESC! - DynamicQuery
 @echo %time%: Starting DynamicQuery
 @echo Query: %~1
@@ -522,7 +527,7 @@ rem *****************************************************
 
 :Fart
 
-@echo off
+@echo !ECHOVALUE!
 @echo !JOBDESC! - FART - Find And Replace Text
 @echo %time%: Starting FART
 @echo Filename: %~1
@@ -553,7 +558,7 @@ rem *****************************************************
 
 :FartRemove
 
-@echo off
+@echo !ECHOVALUE!
 @echo !JOBDESC! - FART - Find And Replace Text
 @echo %time%: Starting FART
 @echo Filename: %~1
@@ -583,7 +588,7 @@ rem *													*
 rem *****************************************************
 
 :StandardExport
-@echo off
+@echo !ECHOVALUE!
 @echo !JOBDESC! - StandardExport
 @echo %time%: Making Apex DataLoader config file (process-conf.xml)
 rem make temp dir for the error & success files
@@ -613,14 +618,16 @@ IF NOT EXIST %BASEFILEDIR%%~1 (
 )
 
 SET OPERATION=extract
-
-java -jar %SAXON% -s:!DLDIR!\process-conf-base.xml -xsl:!XSLPATH!PrepExportConfig.xsl -o:!DLDIR!\process-conf-!OPERATION!-%~1.xml operation=!OPERATION! csv="%~4" dataaccess=csvWrite logdir=%BASEDIR%log entity=%~2 soql="%~3 !LIMIT!" endpoint=%~5 username=%~6 password=%~7 bulkapi=!BULKAPI!  batchsize=!BATCHSIZE! successfile=!LOGSDIR!\success.csv errorfile=!LOGSDIR!\error.csv
-
+rem echo DLDIR: !DLDIR!
+rem @echo java -jar %SAXON% -s:!DLDIR!\process-conf-base.xml -xsl:!XSLPATH!PrepExportConfig.xsl -o:!DLDIR!\process-conf-!OPERATION!-%~1.xml operation=!OPERATION! csv="%~4" dataaccess=csvWrite logdir=%BASEDIR%log entity=%~2 soql="%~3 !LIMIT!" endpoint=%~5 username=%~6 password=%~7 bulkapi=!BULKAPI!  batchsize=!BATCHSIZE! successfile=!LOGSDIR!\success.csv errorfile=!LOGSDIR!\error.csv
+java -jar %SAXON% -s:!DLDIR!\process-conf-base.xml -xsl:!XSLPATH!PrepExportConfig.xsl -o:!DLDIR!\process-conf-!OPERATION!-%~1.xml operation=!OPERATION! csv="%~4" dataaccess=csvWrite logdir=%BASEDIR%log entity=%~2 soql="%~3 !LIMIT!" endpoint=%~5 username=%~6 password=%~7 bulkapi=!BULKAPI!  batchsize=!BATCHSIZE! successfile=!LOGSDIR!\success.csv errorfile=!LOGSDIR!\error.csv keyfile=!DLKEYFILE!
 
 type !DLDIR!\doctype.txt !DLDIR!\process-conf-!OPERATION!-%~1.xml > !DLDIR!\process-conf.xml 2>>NUL
 
 @echo %time%: Calling export using %~5 for username %~6 password %~7 into %~4
-java -cp %DLJAR% %JAVAMEM% -Dsalesforce.config.dir=!DLDIR!\ com.salesforce.dataloader.process.ProcessRunner process.name=standard >> %LOGFILE% 2>&1
+rem echo  java -cp %DLJAR% %JAVAMEM% com.salesforce.dataloader.process.DataLoaderRunner !DLDIR! standard run.mode=batch >> %LOGFILE% 2>&1
+ java -cp %DLJAR% %JAVAMEM% com.salesforce.dataloader.process.DataLoaderRunner !DLDIR! standard run.mode=batch >> %LOGFILE% 2>&1
+
 @echo %time%: Export complete
 
 call :GetLastLineOfLog %MAINLOGDIR%\sdl.log
@@ -665,19 +672,19 @@ IF NOT EXIST !LOGSDIR! (
 	mkdir !LOGSDIR!
 )
 
-java -jar %SAXON% -s:!DLDIR!\process-conf-base.xml -xsl:!XSLPATH!PrepExportConfig.xsl -o:!DLDIR!\process-conf-!OPERATION!-%~1.xml operation=!OPERATION! csv=%~4 dataaccess=csvRead logdir=%BASEDIR%log mappingfile=%~3 entity=%~2  endpoint=%~5 username=%~6 password=%~7 bulkapi=!BULKAPI!  batchsize=!BATCHSIZE! successfile=!LOGSDIR!\success.csv errorfile=!LOGSDIR!\error.csv bulkapiserial=!BULKAPISERIAL!  bulkapizipcontent=!BULKAPIZIPCONTENT!
+java -jar %SAXON% -s:!DLDIR!\process-conf-base.xml -xsl:!XSLPATH!PrepExportConfig.xsl -o:!DLDIR!\process-conf-!OPERATION!-%~1.xml operation=!OPERATION! csv=%~4 dataaccess=csvRead logdir=%BASEDIR%log mappingfile=%~3 entity=%~2  endpoint=%~5 username=%~6 password=%~7 bulkapi=!BULKAPI!  batchsize=!BATCHSIZE! successfile=!LOGSDIR!\success.csv errorfile=!LOGSDIR!\error.csv bulkapiserial=!BULKAPISERIAL!  bulkapizipcontent=!BULKAPIZIPCONTENT! keyfile=!DLKEYFILE!
 
 type !DLDIR!\doctype.txt !DLDIR!\process-conf-!OPERATION!-%~1.xml > !DLDIR!\process-conf.xml 2>>NUL
 
 @echo %time%: Calling import using %WRITEUSERNAME%
-java -cp %DLJAR% %JAVAMEM% -Dsalesforce.config.dir=!DLDIR!\ com.salesforce.dataloader.process.ProcessRunner process.name=standard >> %LOGFILE% 2>&1
+ java -cp %DLJAR% %JAVAMEM% com.salesforce.dataloader.process.DataLoaderRunner !DLDIR! standard run.mode=batch >> %LOGFILE% 2>&1
 @echo %time%: Import complete
 call :AbortOnError errorfile=!LOGSDIR!\error.csv
 call :GetLastLineOfLog %MAINLOGDIR%\sdl.log
 
 call :ZipResult "%BASEFILEDIR%%~1\result_!JOBDESC!-!OPERATION!_!FILETS!.zip" !LOGSDIR!
 
-rem this is CALLed, so we need to Exit /b instead of the GOTO
+@rem this is CALLed, so we need to Exit /b instead of the GOTO
 exit /b
 
 @echo off
@@ -715,19 +722,19 @@ IF NOT EXIST !LOGSDIR! (
 )
 
 
-java -jar %SAXON% -s:!DLDIR!\process-conf-base.xml -xsl:!XSLPATH!PrepExportConfig.xsl -o:!DLDIR!\process-conf-!OPERATION!-%~1.xml operation=!OPERATION! csv=%~4 dataaccess=csvRead logdir=%BASEDIR%log mappingfile=%~3 entity=%~2 endpoint=%~5 username=%~6 password=%~7 bulkapi=!BULKAPI!  batchsize=!BATCHSIZE! bulkapizipcontent=!BULKAPIZIPCONTENT! externalid=!EXTERNALID! successfile=!LOGSDIR!\success.csv errorfile=!LOGSDIR!\error.csv bulkapiserial=!BULKAPISERIAL! 
+java -jar %SAXON% -s:!DLDIR!\process-conf-base.xml -xsl:!XSLPATH!PrepExportConfig.xsl -o:!DLDIR!\process-conf-!OPERATION!-%~1.xml operation=!OPERATION! csv=%~4 dataaccess=csvRead logdir=%BASEDIR%log mappingfile=%~3 entity=%~2 endpoint=%~5 username=%~6 password=%~7 bulkapi=!BULKAPI!  batchsize=!BATCHSIZE! bulkapizipcontent=!BULKAPIZIPCONTENT! externalid=!EXTERNALID! successfile=!LOGSDIR!\success.csv errorfile=!LOGSDIR!\error.csv bulkapiserial=!BULKAPISERIAL! keyfile=!DLKEYFILE!
 
 type !DLDIR!\doctype.txt !DLDIR!\process-conf-!OPERATION!-%~1.xml > !DLDIR!\process-conf.xml 2>>NUL
 
 @echo %time%: Calling upsert using %WRITEUSERNAME%
-java -cp %DLJAR% %JAVAMEM% -Dsalesforce.config.dir=!DLDIR!\ com.salesforce.dataloader.process.ProcessRunner process.name=standard >> %LOGFILE% 2>&1
+ java -cp %DLJAR% %JAVAMEM% com.salesforce.dataloader.process.DataLoaderRunner !DLDIR! standard run.mode=batch >> %LOGFILE% 2>&1
 @echo %time%: Upsert complete
 call :AbortOnError errorfile=!LOGSDIR!\error.csv
 call :GetLastLineOfLog %MAINLOGDIR%\sdl.log
 
 call :ZipResult "%BASEFILEDIR%%~1\result_!JOBDESC!-!OPERATION!_!FILETS!.zip" !LOGSDIR!
 
-rem this is CALLed, so we need to Exit /b instead of the GOTO
+@rem this is CALLed, so we need to Exit /b instead of the GOTO
 exit /b
 
 @echo off
@@ -765,19 +772,19 @@ IF NOT EXIST !LOGSDIR! (
 )
 
 
-java -jar %SAXON% -s:!DLDIR!\process-conf-base.xml -xsl:!XSLPATH!PrepExportConfig.xsl -o:!DLDIR!\process-conf-!OPERATION!-%~1.xml operation=!OPERATION! csv=%~4 dataaccess=csvRead logdir=%BASEDIR%log mappingfile=%~3 entity=%~2 endpoint=%~5 username=%~6 password=%~7 bulkapi=!BULKAPI!  batchsize=!BATCHSIZE! bulkapizipcontent=!BULKAPIZIPCONTENT! externalid=!EXTERNALID! successfile=!LOGSDIR!\success.csv errorfile=!LOGSDIR!\error.csv bulkapiserial=!BULKAPISERIAL!
+java -jar %SAXON% -s:!DLDIR!\process-conf-base.xml -xsl:!XSLPATH!PrepExportConfig.xsl -o:!DLDIR!\process-conf-!OPERATION!-%~1.xml operation=!OPERATION! csv=%~4 dataaccess=csvRead logdir=%BASEDIR%log mappingfile=%~3 entity=%~2 endpoint=%~5 username=%~6 password=%~7 bulkapi=!BULKAPI!  batchsize=!BATCHSIZE! bulkapizipcontent=!BULKAPIZIPCONTENT! externalid=!EXTERNALID! successfile=!LOGSDIR!\success.csv errorfile=!LOGSDIR!\error.csv bulkapiserial=!BULKAPISERIAL! keyfile=!DLKEYFILE!
 
 type !DLDIR!\doctype.txt !DLDIR!\process-conf-!OPERATION!-%~1.xml > !DLDIR!\process-conf.xml 2>>NUL
 
 @echo %time%: Calling update using %WRITEUSERNAME% - file %~4
-java -cp %DLJAR% %JAVAMEM% -Dsalesforce.config.dir=!DLDIR!\ com.salesforce.dataloader.process.ProcessRunner process.name=standard >> %LOGFILE% 2>&1
+ java -cp %DLJAR% %JAVAMEM% com.salesforce.dataloader.process.DataLoaderRunner !DLDIR! standard run.mode=batch >> %LOGFILE% 2>&1
 @echo %time%: Update complete
 call :AbortOnError errorfile=!LOGSDIR!\error.csv
 call :GetLastLineOfLog %MAINLOGDIR%\sdl.log
 
 call :ZipResult "%BASEFILEDIR%%~1\result_!JOBDESC!-!OPERATION!_!FILETS!.zip" !LOGSDIR!
 
-rem this is CALLed, so we need to Exit /b instead of the GOTO
+@rem this is CALLed, so we need to Exit /b instead of the GOTO
 exit /b
 
 
@@ -795,7 +802,7 @@ rem *****************************************************
 
 @echo !JOBDESC! - Truncate
 %PSQLCMD% -U %DBUSER% -d %DBNAME% -c "TRUNCATE !OBJECT!;"
-rem this is CALLed, so we need to Exit /b instead of the GOTO
+@rem this is CALLed, so we need to Exit /b instead of the GOTO
 exit /b
 
 @echo off
@@ -820,7 +827,7 @@ rem *****************************************************
 %PSQLCMD% -U %DBUSER% -d %DBNAME% -c "VACUUM ANALYZE %~1;"
 %PSQLCMD% -U %DBUSER% -d %DBNAME% -c "VACUUM ANALYZE mapping_master;"
 @echo %time%: database vaccum complete
-rem this is CALLed, so we need to Exit /b instead of the GOTO
+@rem this is CALLed, so we need to Exit /b instead of the GOTO
 exit /b
 
 @echo off
@@ -845,7 +852,7 @@ rem %PSQLCMD% -U %DBUSER% -d %DBNAME% -c "UPDATE !OBJECT! SET %~1 = 'cannot_map'
 @echo * %time%: database command complete
 @echo *                                                         *
 @echo ***********************************************************
-rem this is CALLed, so we need to Exit /b instead of the GOTO
+@rem this is CALLed, so we need to Exit /b instead of the GOTO
 exit /b
 
 @echo off
@@ -859,11 +866,12 @@ rem *													*
 rem *****************************************************
 
 :DoSQL
+@echo !ECHOVALUE!
 @echo !OBJECT! - DoSQL in PGSQL
 @echo %time%: calling database command %~1
 %PSQLCMD% -U %DBUSER% -d %DBNAME% -c "%~1"
 @echo %time%: database command complete
-rem this is CALLed, so we need to Exit /b instead of the GOTO
+@rem this is CALLed, so we need to Exit /b instead of the GOTO
 exit /b
 
 
@@ -889,7 +897,7 @@ rem @echo "COPY (SELECT %~2 FROM %~1 %~4) TO '%~3' DELIMITER ',' CSV ENCODING 'U
 %PSQLCMD% -U %DBUSER% -d %DBNAME% -c "COPY (SELECT %~2 FROM %~1 %~4 !ORDERBY!) TO '%~3' DELIMITER ',' CSV ENCODING 'UTF-8' NULL '' HEADER;"
 @echo %time%: database command complete
 @echo Created/updated file %~3
-rem this is CALLed, so we need to Exit /b instead of the GOTO
+@rem this is CALLed, so we need to Exit /b instead of the GOTO
 exit /b
 
 
@@ -921,7 +929,7 @@ rem %PSQLCMD% -U %DBUSER% -d %DBNAME% -c "DELETE FROM mapping_master WHERE dents
 %PSQLCMD% -U %DBUSER% -d %DBNAME% -c "DROP TABLE temp_mapping_%~2;"
 
 @echo %time%: database command complete
-rem this is CALLed, so we need to Exit /b instead of the GOTO
+@rem this is CALLed, so we need to Exit /b instead of the GOTO
 exit /b
 
 rem *****************************************************
@@ -941,7 +949,7 @@ rem *													*
 rem *****************************************************
 
 :StandardDelete
-@echo off
+@echo !ECHOVALUE!
 @echo !JOBDESC! - StandardDelete
 
 
@@ -962,24 +970,25 @@ IF NOT EXIST %BASEFILEDIR%%~1 (
 )
 
 SET OPERATION=hard_delete
+SET BULKAPI=true
 
 @echo %time%: Making Apex DataLoader config file (process-conf.xml)
 
-java -jar %SAXON% -s:!DLDIR!\process-conf-base.xml -xsl:!XSLPATH!PrepExportConfig.xsl -o:!DLDIR!\process-conf-!OPERATION!-%~1.xml operation=!OPERATION! csv=%~4 dataaccess=csvRead logdir=!LOGSDIR! mappingfile=%~3 entity=%~2 endpoint=%~5 username=%~6 password=%~7 bulkapi=!BULKAPI! batchsize=!BATCHSIZE! successfile=!LOGSDIR!\success.csv errorfile=!LOGSDIR!\error.csv
+java -jar %SAXON% -s:!DLDIR!\process-conf-base.xml -xsl:!XSLPATH!PrepExportConfig.xsl -o:!DLDIR!\process-conf-!OPERATION!-%~1.xml operation=!OPERATION! csv=%~4 dataaccess=csvRead logdir=!LOGSDIR! mappingfile=%~3 entity=%~2 endpoint=%~5 username=%~6 password=%~7 bulkapi=!BULKAPI! batchsize=!BATCHSIZE! successfile=!LOGSDIR!\success.csv errorfile=!LOGSDIR!\error.csv keyfile=!DLKEYFILE!
 
 type !DLDIR!\doctype.txt !DLDIR!\process-conf-!OPERATION!-%~1.xml > !DLDIR!\process-conf.xml 2>>NUL
 
 @echo %time%: Apex DataLoader config file (process-conf.xml) completed
 
 @echo %time%: Calling delete using %~6
-java -cp %DLJAR% %JAVAMEM% -Dsalesforce.config.dir=!DLDIR!\ com.salesforce.dataloader.process.ProcessRunner process.name=standard >> %LOGFILE% 2>&1
+java -cp %DLJAR% %JAVAMEM% com.salesforce.dataloader.process.DataLoaderRunner !DLDIR! standard run.mode=batch >> %LOGFILE% 2>&1
 @echo %time%: Delete complete
 
 call :GetLastLineOfLog %MAINLOGDIR%\sdl.log
 
 call :ZipResult "%BASEFILEDIR%%~1\result_!OPERATION!_!FILETS!.zip" !LOGSDIR!
 
-rem this is CALLed, so we need to Exit /b instead of the GOTO
+@rem this is CALLed, so we need to Exit /b instead of the GOTO
 exit /b
 
 
@@ -999,7 +1008,7 @@ IF !ZIPRESULTS!==1 (
 	
 ) else (
 	IF [!JOBRESULTS!] == [] (
-		@echo %time%: asked to not zip job results, but no JORRESULTS parameter found in config file, will zip anyway to %~1
+		@echo %time%: asked to not zip job results, but no JOBRESULTS parameter found in config file, will zip anyway to %~1
 		rem now zip up the content of the logsdir
 		!ZIP! a "%~1" %~2\*.* >NUL 2>&1
 	)
@@ -1017,7 +1026,7 @@ rem remove logsdir
 rmdir /s /q %~2
 @echo %time%: finished results zip/move
 
-rem this is CALLed, so we need to Exit /b instead of the GOTO
+@rem this is CALLed, so we need to Exit /b instead of the GOTO
 exit /b
 
 
@@ -1029,20 +1038,21 @@ rem now zip up the content of the logsdir
 rem remove logsdir
 rmdir /s /q %~2
 @echo %time%: finished conf zip
-rem this is CALLed, so we need to Exit /b instead of the GOTO
+@rem this is CALLed, so we need to Exit /b instead of the GOTO
 exit /b
 
 :GetEncryptedPassword
 
-echo Getting encrypted password for string %~1
+echo Getting encrypted password for string %~1 to put into %~2
 
-set pwdcmd=java -cp %DLJAR% com.salesforce.dataloader.security.EncryptionUtil -e %~1
+rem set pwdcmd=java -cp %DLJAR% com.salesforce.dataloader.security.EncryptionUtil -e %~1
+set pwdcmd=java -cp %DLJAR% com.salesforce.dataloader.process.DataLoaderRunner -e %~1 !DLKEYFILE! "run.mode=encrypt"
 for /f "tokens=* delims= " %%I in ('%pwdcmd%') do for %%A in (%%~I) do set %~2=%%A
 rem %pwdcmd%
 
 echo Encrypted password set to !%~2!
 
-rem this is CALLed, so we need to Exit /b instead of the GOTO
+@rem this is CALLed, so we need to Exit /b instead of the GOTO
 exit /b
 
 :GetLastLineOfLog
@@ -1051,31 +1061,31 @@ for /f "tokens=* delims=" %%a in (%~1) do (
 set var=%%a
 )
 echo !var!
-
-rem this is CALLed, so we need to Exit /b instead of the GOTO
+@echo !ECHOVALUE!
+@rem this is CALLed, so we need to Exit /b instead of the GOTO
 exit /b
 
 :LoadPropFile
 
-rem Params: 1: properties file to read
+rem Params: 1: properties file to read: %1
 
-@echo off
+@echo !ECHOVALUE!
 for /f "eol=# delims== tokens=1,2" %%a in (%1) do (
 	call :SetWithTrim %%a %%b
 )
-rem this is CALLed, so we need to Exit /b instead of the GOTO
+@rem this is CALLed, so we need to Exit /b instead of the GOTO
 exit /b
 
 :SetWithTrim
 
-rem Params: 1: name of param
-rem Params: 2: value of param
+@rem Params: 1: name of param
+@rem Params: 2: value of param
 
-@echo off
+@echo !ECHOVALUE!
 
 SET %1=%2
 
-rem this is CALLed, so we need to Exit /b instead of the GOTO
+@rem this is CALLed, so we need to Exit /b instead of the GOTO
 exit /b
 
 :GetTimestamp
@@ -1098,7 +1108,8 @@ set DATE.OFFSET=%X:~21,4%
 
 rem echo %DATE.YEAR%-%DATE.MONTH%-%DATE.DAY% %DATE.HOUR%:%DATE.MINUTE%:%DATE.SECOND%.%DATE.FRACTIONS%
 
-rem this is CALLed, so we need to Exit /b instead of the GOTO
+@rem this is CALLed, so we need to Exit /b instead of the GOTO
+@echo !ECHOVALUE!
 exit /b
 
 
@@ -1108,9 +1119,9 @@ rem salesforce params - org to delete from
 
 call :LoadPropFile %PROPDIR%%2.properties
 
-SET WRITEENDPOINT=!SERVERURL!%URLSUFFIX%!apiversion!
-SET WRITEUSERNAME=!USERNAME!
-SET WRITEUNENCPASSWORD=!PASSWORD!
+SET WRITEENDPOINT=!SF.SERVERURL!%URLSUFFIX%!sf.apiversion!
+SET WRITEUSERNAME=!SF.USERNAME!
+SET WRITEUNENCPASSWORD=!SF.PASSWORD!
 
 call :GetEncryptedPassword !WRITEUNENCPASSWORD! WRITEPASSWORD
 
@@ -1126,6 +1137,7 @@ for %%f in (%4) do (
 		SET DIRTS=!DATE.YEAR!!DATE.MONTH!!DATE.DAY!_!DATE.HOUR!.!DATE.MINUTE!.!DATE.SECOND!.!DATE.FRACTIONS!
 		
 		SET DLDIR=%BASEDLDIR%\dlconfig-delete-!DIRTS!
+		echo Working Directory: !DLDIR!
 		mkdir !DLDIR!
 		@xcopy /q %BASEDLDIR%\*.* !DLDIR! >> NUL 2>&1
 
@@ -1169,9 +1181,9 @@ rem %6 - output filename
 
 call :LoadPropFile %PROPDIR%%2.properties
 
-SET WRITEENDPOINT=!SERVERURL!%URLSUFFIX%!apiversion!
-SET WRITEUSERNAME=!USERNAME!
-SET WRITEUNENCPASSWORD=!PASSWORD!
+SET WRITEENDPOINT=!SF.SERVERURL!%URLSUFFIX%!sf.apiversion!
+SET WRITEUSERNAME=!SF.USERNAME!
+SET WRITEUNENCPASSWORD=!SF.PASSWORD!
 
 call :GetEncryptedPassword !WRITEUNENCPASSWORD! WRITEPASSWORD
 

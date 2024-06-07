@@ -1,12 +1,7 @@
-<beans default-lazy-init="false"
-       default-autowire="no"
-       default-dependency-check="none">
+<beans>
    <bean id="standard"
-         class="com.salesforce.dataloader.process.ProcessRunner"
-         singleton="false"
-         lazy-init="default"
-         autowire="default"
-         dependency-check="default">
+             class="com.salesforce.dataloader.process.ProcessRunner"
+          scope="prototype">
       <description>Created by Powerloader</description>
       <property name="name" value="standard"/>
       <property name="configOverrideMap">
