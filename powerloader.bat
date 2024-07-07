@@ -4,11 +4,14 @@
  
 @cls
 
-Setlocal EnableDelayedExpansion
+
 
 @SET ECHOVALUE=off
+@SET ECHOPASSWORDS=off
 
-rem database params
+Setlocal EnableDelayedExpansion
+
+@rem database params
 
 
 @echo off
@@ -127,10 +130,16 @@ echo *********************************************************
 echo * Reading from:
 echo * Endpoint: !READENDPOINT!
 echo * Username: !READUSERNAME!
+IF [!ECHOPASSWORDS!]==[on] (
+	echo * Password: !READUNENCPASSWORD!
+) 
 echo *
 echo * Writing to:
 echo * Endpoint: !WRITEENDPOINT!
 echo * Username: !WRITEUSERNAME!
+IF [!ECHOPASSWORDS!]==[on] (
+	echo * Password: !WRITEUNENCPASSWORD!
+)
 echo *********************************************************
 
 
@@ -196,6 +205,9 @@ for /f %%d in ('dir /a:-d /b %CONFIGSDIR%\%FILEPREFIX%') do (
 	SET BEFCMD=
 	SET AFTCMD=
 	SET JOBRESULTS=
+	SET READPASSWORD=
+	SET WRITEPASSWORD=
+	SET BTSTARTED=
    
    		Setlocal DisableDelayedExpansion
 		for /f "eol=# tokens=1,2 delims=:" %%a in (%BASEDIR%configs\%%d) do (
@@ -219,7 +231,7 @@ for /f %%d in ('dir /a:-d /b %CONFIGSDIR%\%FILEPREFIX%') do (
 	SET DLDIR=%BASEDLDIR%\dlconfig-%%d-!DIRTS!
 
 	echo Dataload directory: !DLDIR!
-	pause
+	rem pause
 	mkdir !DLDIR!
 	@copy %BASEDLDIR%\*.* !DLDIR! > NUL
 	
@@ -677,7 +689,8 @@ java -jar %SAXON% -s:!DLDIR!\process-conf-base.xml -xsl:!XSLPATH!PrepExportConfi
 type !DLDIR!\doctype.txt !DLDIR!\process-conf-!OPERATION!-%~1.xml > !DLDIR!\process-conf.xml 2>>NUL
 
 @echo %time%: Calling import using %WRITEUSERNAME%
- java -cp %DLJAR% %JAVAMEM% com.salesforce.dataloader.process.DataLoaderRunner !DLDIR! standard run.mode=batch >> %LOGFILE% 2>&1
+echo java -cp %DLJAR% %JAVAMEM% com.salesforce.dataloader.process.DataLoaderRunner !DLDIR! standard run.mode=batch >> %LOGFILE% 2>&1
+java -cp %DLJAR% %JAVAMEM% com.salesforce.dataloader.process.DataLoaderRunner !DLDIR! standard run.mode=batch >> %LOGFILE% 2>&1
 @echo %time%: Import complete
 call :AbortOnError errorfile=!LOGSDIR!\error.csv
 call :GetLastLineOfLog %MAINLOGDIR%\sdl.log
@@ -997,8 +1010,8 @@ exit /b
 rem %1 name of output Zipfile
 rem %2 name of log directory which is to be zipped
 
-rem echo ZIPRESULTS: !ZIPRESULTS!
-rem echo JOBRESULTS: !JOBRESULTS!
+rem echo ZIPRESULTS: !ZIPRESULTS! - %~1
+rem echo JOBRESULTS: !JOBRESULTS! - %~2
 
 IF !ZIPRESULTS!==1 (
 	@echo %time%: starting results zip to %~1
@@ -1043,8 +1056,10 @@ exit /b
 
 :GetEncryptedPassword
 
-echo Getting encrypted password for string %~1 to put into %~2
 
+IF [!ECHOPASSWORDS!]==[on] (
+	echo Getting encrypted password for string %~1 to put into %~2
+)
 rem set pwdcmd=java -cp %DLJAR% com.salesforce.dataloader.security.EncryptionUtil -e %~1
 set pwdcmd=java -cp %DLJAR% com.salesforce.dataloader.process.DataLoaderRunner -e %~1 !DLKEYFILE! "run.mode=encrypt"
 for /f "tokens=* delims= " %%I in ('%pwdcmd%') do for %%A in (%%~I) do set %~2=%%A
