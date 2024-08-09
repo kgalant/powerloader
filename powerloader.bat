@@ -246,7 +246,7 @@ for /f %%d in ('dir /a:-d /b %CONFIGSDIR%\%FILEPREFIX%') do (
 	
 	IF !CMDBEFORE!==1 (
 		IF !BTSTARTED!==0 (
-			@start c:\tools\baretail.exe %LOGFILE%
+			@start %BARETAIL% %LOGFILE%
 			SET BTSTARTED=1			
 		)
 		
@@ -406,7 +406,7 @@ for /f %%d in ('dir /a:-d /b %CONFIGSDIR%\%FILEPREFIX%') do (
 
 	IF !UPD!==1 (
 		IF !BTSTARTED!==0 (
-			@start c:\tools\baretail.exe %LOGFILE%
+			@start %BARETAIL% %LOGFILE%
 			SET BTSTARTED=1			
 		)
 		
@@ -465,7 +465,7 @@ for /f %%d in ('dir /a:-d /b %CONFIGSDIR%\%FILEPREFIX%') do (
 
 	IF !CMDAFTER!==1 (
 		IF !BTSTARTED!==0 (
-			@start c:\tools\baretail.exe %LOGFILE%
+			@start %BARETAIL% %LOGFILE%
 			SET BTSTARTED=1			
 		)
 		
@@ -1140,7 +1140,11 @@ SET WRITEUNENCPASSWORD=!SF.PASSWORD!
 
 call :GetEncryptedPassword !WRITEUNENCPASSWORD! WRITEPASSWORD
 
-@start %BARETAIL% -ws 1 -tc 4 -ti 3 %LOGFILE%
+IF !BTSTARTED!==0 (
+	@start %BARETAIL% %LOGFILE%
+	SET BTSTARTED=1			
+)
+rem @start %BARETAIL% -ws 1 -tc 4 -ti 3 %LOGFILE%
 SET BULKAPI=%3
 
 for %%f in (%4) do (
@@ -1202,7 +1206,13 @@ SET WRITEUNENCPASSWORD=!SF.PASSWORD!
 
 call :GetEncryptedPassword !WRITEUNENCPASSWORD! WRITEPASSWORD
 
-@start %BARETAIL% -ws 1 -tc 4 -ti 3 %LOGFILE%
+rem @start %BARETAIL% -ws 1 -tc 4 -ti 3 %LOGFILE%
+
+IF !BTSTARTED!==0 (
+	@start %BARETAIL% %LOGFILE%
+	SET BTSTARTED=1			
+)
+
 SET BULKAPI=%3
 
 for %%f in (%4) do (
