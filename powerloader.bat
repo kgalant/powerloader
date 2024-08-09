@@ -8,8 +8,8 @@
 
 @SET ECHOVALUE=off
 @SET ECHOPASSWORDS=off
-
-Setlocal EnableDelayedExpansion
+@echo %ECHOVALUE%
+@Setlocal EnableDelayedExpansion
 
 @rem database params
 
